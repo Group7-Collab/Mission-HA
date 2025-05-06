@@ -5,12 +5,15 @@ Description: 'Compute Resources and Load Balancer'
 Parameters:
   VpcId:
     Type: String
-  SubnetApp1:
+  PublicSubnetApp1:
     Type: String
-  SubnetApp2:
+  PublicSubnetApp2:
     Type: String
   AppSecurityGroupId:
     Type: String
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of the SSH Key Pair to allow access to EC2 instances
 
 Resources:
   ALBSecurityGroup:
@@ -68,7 +71,9 @@ Resources:
     Properties:
       LaunchTemplateData:
         InstanceType: t2.micro
-        ImageId: ami-0e449927258d45bc4 #Amazon linux 2023 AMI
+        ImageId: ami-00172f2f108369fb3
+        #ImageId: ami-0e449927258d45bc4 #Amazon linux 2023 AMI
+        KeyName: !Ref KeyName
         SecurityGroupIds:
           - !Ref AppSecurityGroupId
         TagSpecifications:
@@ -83,7 +88,6 @@ Resources:
             yum install -y httpd
             systemctl start httpd
             systemctl enable httpd
-            echo 'Hello from EC2 in Auto Scaling Group' > /var/www/html/index.html
             chkconfig httpd on
 
   AutoScalingGroup:

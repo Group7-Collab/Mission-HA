@@ -1,4 +1,3 @@
----
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Networking and Security Infrastructure'
 
@@ -132,6 +131,21 @@ Resources:
         - Key: Name
           Value: NATGateway1
 
+  NATGatewayEIP2:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachGateway
+    Properties:
+      Domain: vpc
+
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: NATGateway2
+
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -147,16 +161,25 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGateway1
 
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable2
+
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+
   PrivateSubnetApp1RouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnetApp1
-      RouteTableId: !Ref PrivateRouteTable1
-
-  PrivateSubnetApp1RouteTableAssociation2:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnetApp2
       RouteTableId: !Ref PrivateRouteTable1
 
   PrivateSubnetDB1RouteTableAssociation1:
@@ -165,11 +188,17 @@ Resources:
       SubnetId: !Ref PrivateSubnetDB1
       RouteTableId: !Ref PrivateRouteTable1
 
-  PrivateSubnetDB1RouteTableAssociation2:
+  PrivateSubnetApp2RouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetApp2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  PrivateSubnetDB2RouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PrivateSubnetDB2
-      RouteTableId: !Ref PrivateRouteTable1
+      RouteTableId: !Ref PrivateRouteTable2
 
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -184,6 +213,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
           CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
